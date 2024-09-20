@@ -1,34 +1,110 @@
 const Product = require("../models/Product");
+const Variant = require("../models/Variant");
+const variant = require("../models/Variant");
 
-// Create a new product
 const createProducts = async (req, res) => {
-  const { name, price, description, categoryId } = req.body;
+  // #swagger.tags = ['Product']
+  const { name, price, description, categoryId, variants } = req.body;
 
   try {
-    // Check if a file is uploaded
     if (!req.file) {
       return res.status(400).json({ message: "No files uploaded" });
     }
 
-    // Set the imageUrl in the request body
+    // Set imageUrl
     req.body["imageUrl"] = `/public/uploads/${req.file.filename}`;
 
-    // Create a new product instance with the request body
+    // Create and save product
     const newProduct = new Product(req.body);
+    const savedProduct = await newProduct.save();
 
-    // Save the product to the database
-    const product = await newProduct.save();
+    // If variants are provided, create them
+    if (variants && Array.isArray(variants)) {
+      for (const variantData of variants) {
+        const { size, color, stock } = variantData;
 
-    // Respond with the created product
-    res.status(201).json(product);
+        const newVariant = new Variant({
+          product: savedProduct._id,
+          size,
+          color,
+          stock,
+        });
+
+        const savedVariant = await newVariant.save();
+
+        // Update product with variant IDs
+        await Product.findByIdAndUpdate(
+          savedProduct._id,
+          { $push: { variants: savedVariant._id } }, // Push variant ID
+          { new: true }
+        );
+      }
+    }
+
+    res.status(201).json(savedProduct);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+const getProducts = async (req, res) => {
+  // #swagger.tags = ['Product']
+  try {
+    // Fetch products with populated variants
+    const products = await Product.find()
+      .populate("variants") // Populate variants array directly
+      .exec();
+
+    // Format the response
+    const formattedProducts = products.map((product) => ({
+      _id: product._id,
+      name: product.name,
+      price: product.price,
+      imageUrl: product.imageUrl,
+      variants: product.variants.map((variant) => ({
+        _id: variant._id,
+        size: variant.size,
+        color: variant.color,
+        stock: variant.stock,
+        files: variant.files || [], // Ensure files is an array
+      })),
+    }));
+
+    res.status(200).json({
+      success: true,
+      products: formattedProducts,
+    });
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: "Error fetching products",
+        error: error.message,
+      });
+  }
+};
+const getProductById = async (req, res) => {
+  // #swagger.tags = ['Product']
+  const { id } = req.params;
+
+  try {
+    const product = await Product.findById(id);
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.status(200).json(product);
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ message: "Server error" });
   }
 };
-
-// Update an existing product by ID
 const updateProducts = async (req, res) => {
+  // #swagger.tags = ['Product']
   const { id } = req.params;
   const updateData = req.body;
 
@@ -38,73 +114,31 @@ const updateProducts = async (req, res) => {
       updateData.imageUrl = `/public/uploads/${req.file.filename}`;
     }
 
-    // Find the product by ID and update it
     const updatedProduct = await Product.findByIdAndUpdate(id, updateData, {
       new: true,
     });
 
-    // If no product is found, return a 404 error
     if (!updatedProduct) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // Respond with the updated product
     res.status(200).json(updatedProduct);
   } catch (error) {
     console.error(error.message);
     res.status(500).json({ message: "Server error" });
   }
 };
-
-// Get a product by ID
-const getProductById = async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    // Find the product by ID
-    const product = await Product.findById(id);
-
-    // If no product is found, return a 404 error
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
-    }
-
-    // Respond with the product
-    res.status(200).json(product);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-// Get all products
-const getProducts = async (req, res) => {
-  try {
-    // Fetch all products from the database
-    const products = await Product.find();
-
-    // Respond with the list of products
-    res.status(200).json(products);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-// Delete a product by ID
 const deleteProducts = async (req, res) => {
+  // #swagger.tags = ['Product']
   const { id } = req.params;
 
   try {
-    // Find the product by ID and delete it
     const deletedProduct = await Product.findByIdAndDelete(id);
 
-    // If no product is found, return a 404 error
     if (!deletedProduct) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // Respond with the deleted product
     res.status(200).json(deletedProduct);
   } catch (error) {
     console.error(error.message);

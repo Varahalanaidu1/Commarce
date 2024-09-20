@@ -4,6 +4,7 @@ const authenticateToken = require("../middleware/authToken");
 
 // Add item to cart
 const addItemToCart = async (req, res) => {
+  // #swagger.tags = ['Cart']
   try {
     const { productId, quantity } = req.body;
     const userId = req.user._id;
@@ -43,6 +44,7 @@ const addItemToCart = async (req, res) => {
 //Cart increase and decrease
 
 const updateCartQuantity = async (req, res) => {
+  // #swagger.tags = ['Cart']
   try {
     const { productId, action } = req.body; // action should be either "increase" or "decrease"
     const userId = req.user._id;
@@ -96,10 +98,12 @@ const updateCartQuantity = async (req, res) => {
 
 // Get cart by token
 const getByToken = async (req, res) => {
+  // #swagger.tags = ['Cart']
   try {
-    const userId = req.user._id; // Get user ID from token
+    const user = req.user.userId; // Get user ID from token
+    const cart = await Cart.findOne({ user }).populate("items.productId");
 
-    const cart = await Cart.findOne({ userId }).populate("items.productId");
+    console.log("carts", cart); // Fixed typo here
 
     if (!cart) {
       return res
@@ -118,6 +122,7 @@ const getByToken = async (req, res) => {
 
 // Update cart item quantity
 const updateCartItem = async (req, res) => {
+  // #swagger.tags = ['Cart']
   try {
     const { productId, quantity } = req.body;
     const userId = req.user._id;
@@ -164,6 +169,7 @@ const updateCartItem = async (req, res) => {
 
 // Remove item from cart
 const removeItemFromCart = async (req, res) => {
+  // #swagger.tags = ['Cart']
   try {
     const { productId } = req.body;
     const userId = req.user._id;
@@ -198,7 +204,6 @@ const removeItemFromCart = async (req, res) => {
   }
 };
 
-
 module.exports = {
   addItemToCart,
   getByToken,
@@ -206,8 +211,3 @@ module.exports = {
   removeItemFromCart,
   updateCartQuantity,
 };
-
-
-
-
-// changes to test

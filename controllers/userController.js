@@ -3,9 +3,11 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { token } = require("morgan");
 const authToken = require("../middleware/authToken");
+
 // Create a new user
 
 const register = async (req, res) => {
+  // #swagger.tags = ['User']
   try {
     const { name, email, password } = req.body;
 
@@ -41,6 +43,7 @@ const register = async (req, res) => {
 //Login user
 
 const loginUser = async (req, res) => {
+  // #swagger.tags = ['User']
   const { email, password } = req.body;
 
   try {
@@ -68,6 +71,7 @@ const loginUser = async (req, res) => {
 };
 
 const resetPassword = async (req, res) => {
+  // #swagger.tags = ['User']
   try {
     const { token, password } = req.body;
 
@@ -104,6 +108,7 @@ const resetPassword = async (req, res) => {
 
 // Get all users
 const getUsers = async (req, res) => {
+  // #swagger.tags = ['User']
   try {
     const users = await User.find();
     res.status(200).json(users);
@@ -115,6 +120,7 @@ const getUsers = async (req, res) => {
 
 // Get a user by ID
 const getUserById = async (req, res) => {
+  // #swagger.tags = ['User']
   const { id } = req.params;
   try {
     console.log("USER", req.user._id);
@@ -131,6 +137,7 @@ const getUserById = async (req, res) => {
 
 // Update a user
 const updateUser = async (req, res) => {
+  // #swagger.tags = ['User']
   const { id } = req.params;
   const updateData = req.body;
   try {
@@ -149,6 +156,7 @@ const updateUser = async (req, res) => {
 
 // Delete a user
 const deleteUser = async (req, res) => {
+  // #swagger.tags = ['User']
   const { id } = req.params;
   try {
     const user = await User.findByIdAndDelete(id);
